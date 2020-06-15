@@ -135,6 +135,7 @@ AddSubClass("fighter", "renegade", {
 	subname : "Renegade",
 	source : ["LRDToB", ],
 	fullname : "Renegade",
+	abilitySave : 2,
 	features : {
 		"subclassfeature3" : {
 			name : "Scoundrel’s Wit",
@@ -153,7 +154,7 @@ AddSubClass("fighter", "renegade", {
 				name : "Pistoleer",
 				description : desc(["My firearm is a small flintlock handgun"]),
 				weaponOptions : {
-					regExpSearch : /pistoleer firearm$/i,
+					regExpSearch : /pistoleer firearm/i,
 					name : "Pistoleer Firearm",
 					source : ["LRDToB", 0],
 					ability : 2,
@@ -184,7 +185,7 @@ AddSubClass("fighter", "renegade", {
 				name : "Sniper",
 				description : desc(["My firearm is a large two-handed firearm"]),
 				weaponOptions : {
-					regExpSearch : /sniper firearm$/i,
+					regExpSearch : /sniper firearm/i,
 					name : "Sniper Firearm",
 					source : ["LRDToB", 0],
 					ability : 2,
@@ -209,13 +210,345 @@ AddSubClass("fighter", "renegade", {
 				}
 			}
 		},
+		"weapon of choice minor" : {
+			name : "Weapon of Choice (minor upgrades)",
+			source : ["LRDToB", 0],
+			minlevel : 3,
+			description : desc(["Use the \"Choose Feature\" to add minor fire arm upgrades to the third page"]),
+			additional : levels.map(function (n) {
+				return (n < 2 ? "" : (n <  5 ? 1 : 2)) + " minor upgrades";
+			}),
+			extraname : "Minor Firearm Upgrades",
+			extrachoices : [
+				"Blade and Black powder (prereq: Pistoleer Form)", "Caliber Net (prereq: Gunfighter Form)", "Collateral Damage (prereq: Sniper Form)", 
+				"Crosshairs (prereq: level 5 fighter, Gunfighter Form)", "Double-Barrel (prereq: level 5 fighter, Sniper Form)", "Smoke Screen (prereq: Gunfighter Form)"
+			],
+			extraTimes : levels.map(function (n) {
+				return n < 2 ? 0 : n < 5 ? 1 : 2;
+			}),
+			"blade and black powder (prereq: pistoleer form)" : {
+				name : "Blade and Black Powder",
+				description : desc([
+					"Being within 5 ft of an enemy does not impose disadvantage on my Pistoleer firearm attacks",
+					"I can use a bonus action to make a melee attack after shooting my Pistoleer firearm"
+				]),
+				source : ["LRDToB", 0],
+				prereqeval : function(v) { return GetFeatureChoice('class', 'fighter', 'subclassfeature3.1') == 'pistoleer'; },
+				weaponOptions : {
+					regExpSearch : /pistoleer blade/i,
+					name : "Pistoleer Blade",
+					source : ["LRDToB", 0],
+					ability : 2,
+					list : "melee",
+					type : "Martial",
+					isAlwaysProf : true,
+					damage : [1, 6, "slashing"],
+					range : "Melee",
+					abilitytodamage : true
+				},
+				weaponsAdd : ["Pistoleer Blade"],
+				calcChanges : {
+					atkAdd : [
+						function (fields, v) {
+							if (v.isRangedWeapon && (/pistoleer firearm/i).test(v.WeaponName)) {
+								fields.Description += (fields.Description ? '; ' : '') + "No disadv. when enemies within 5 ft";
+							}
+						}, ''
+					]
+				},
+				eval : function () {
+					processActions(true, "Blade and Black Powder", [["bonus action", " (after Pistoleer shot)"]], "Pistoleer Blade");
+					processActions(false, "Blade and Black Powder", [["bonus action", " (after Pistoleer shot)"]], "Blade and Black Powder");
+				},
+				removeeval : function () {
+					processActions(false, "Blade and Black Powder", [["bonus action", " (after Pistoleer shot)"]], "Pistoleer Blade");
+				}
+			},
+			"caliber net (prereq: gunfighter form)" : {
+				name : "Caliber Net",
+				description : desc([
+					"I can use an action to fire an arcane net at a creature within my Gunfighter firearm's range",
+					"It makes a Strength save or is restrained; repeats save at end of each of its turns"
+				]),
+				usages : 1,
+				recovery : "short rest",
+				action : ["action", ""],
+				source : ["LRDToB", 0],
+				prereqeval : function(v) { return GetFeatureChoice('class', 'fighter', 'subclassfeature3.1') != ''; },
+				weaponOptions : {
+					regExpSearch : /caliber net/i,
+					name : "Caliber Net",
+					source : ["LRDToB", 0],
+					ability : 2,
+					dc : true,
+					list : "ranged",
+					type : "Martial",
+					isAlwaysProf : true,
+					abilitytodamage : false,
+					damage : [0, 0, ""],
+					range : "",
+					description : "Strength save or restrained"
+				},
+				weaponsAdd : ["Caliber Net"],
+				calcChanges : {
+					atkAdd : [
+						function (fields, v) {
+							if ((/caliber net/i).test(v.WeaponName)) {
+								fields.Range = ((GetFeatureChoice('class', 'fighter', 'subclassfeature3.1') == 'sniper') ? "120" : "30") + " ft";
+							}
+						}, ''
+					],
+					atkCalc : [
+						function (fields, v, output) {
+							if (v.isRangedWeapon && (/caliber net/i).test(v.WeaponName)) {
+								var fightingStyle = GetFeatureChoice('class', 'fighter', 'fighting style');
+								
+								output.extraHit -= (fightingStyle == 'archery' ? -2 : fightingStyle == 'close quarters shooter' ? -1 : 0);
+							}
+						},""
+					]
+				}
+			},
+			"collateral damage (prereq: sniper form)" : {
+				name : "Collateral Damage",
+				source : ["LRDToB", 0],
+				prereqeval : function(v) { return GetFeatureChoice('class', 'fighter', 'subclassfeature3.1') == 'sniper'; },
+				description : desc(["On a Sniper firearm hit, creatures within 5 ft of the target make a Dexeterity save",
+					"On a failure, they take 1d6 piercing damage"
+				])
+			},
+			"crosshairs (prereq: level 5 fighter, gunfighter form)" : {
+				name : "Crosshairs",
+				source : ["LRDToB", 0],
+				prereqeval : function(v) { return classes.known.fighter.level >= 5 && GetFeatureChoice('class', 'fighter', 'subclassfeature3.1') != ''; },
+				description : desc([
+					"Before moving, I can use a bonus action to aim down the sights of my Gunfighter firearm",
+					"My speed becomes 0 and I gain adv. on all Gunfighter firearm attacks",
+					"These effects last until the end of my turn"
+				]),
+				action : ["bonus action", " (before moving)"]
+			},
+			"double-barrel (prereq: level 5 fighter, sniper form)" : {
+				name : "Double-Barrel",
+				source : ["LRDToB", 0],
+				prereqeval : function(v) { return classes.known.fighter.level >= 5 && GetFeatureChoice('class', 'fighter', 'subclassfeature3.1') == 'sniper'; },
+				description : desc(["My Sniper firearm has 2 barrels; I can make 2 attacks per attack action with it"]),
+				calcChanges : {
+					atkAdd : [
+						function (fields, v) {
+							if ((/sniper firearm/i).test(v.WeaponName)) {
+								fields.Description += (fields.Description ? '; ' : '') + '2 shots per attack';
+							}
+						},"I've added a second barrel to my Sniper firearm, allowing me to make 2 attacks with it per attack action"
+					]
+				}
+			},
+			"smoke screen (prereq: gunfighter form)" : {
+				name : "Smoke Screen",
+				source : ["LRDToB", 0],
+				prereqeval : function(v) { return GetFeatureChoice('class', 'fighter', 'subclassfeature3.1') != ''; },
+				description : desc([
+					"I can use an action to create a 10 ft cube cloud within my Gunfighter's firearm range",
+					"The cloud spreads around corners, lasts 10 mins, and cannot be dispersed",
+					"The area covered by the cloud is heavily obscured"
+				]),
+				usages : 1,
+				recovery : "short rest",
+				action : ["action", ""]
+			}
+		},
+		"weapon of choice major" : {
+			name : "Weapon of Choice (major upgrades)",
+			source : ["LRDToB", 0],
+			minlevel : 3,
+			description : desc(["Use the \"Choose Feature\" to add major fire arm upgrades to the third page"]),
+			additional : levels.map(function (n) {
+				return (n < 2 ? "" : (n < 10 ? 1 : 2)) + " major upgrades";
+			}),
+			extraname : "Major Firearm Upgrades",
+			extrachoices : ["Barrage (prereq: Gunfighter Form)", "Double Up (prereq: Gunfighter Form)", "Lightning Round (prereq: Gunfighter Form)", "Trial by Fire (prereq: Gunfighter Form)"],
+			extraTimes : levels.map(function (n) {
+				return n < 2 ? 0 : n < 10 ? 1 : 2;
+			}),
+			"barrage (prereq: gunfighter form)" : {
+				name : "Barrage",
+				description : desc([
+					"As an action, I can force each creature in a 15 ft cone to make a Dexeterity save",
+					"A creature takes 3d10 piercing damage on a failure, or half as much damage on a success"
+				]),
+				usages : 1,
+				recovery : "short rest",
+				action : ["action", ""],
+				source : ["LRDToB", 0],
+				prereqeval : function(v) { return GetFeatureChoice('class', 'fighter', 'subclassfeature3.1') != ''; },
+				weaponOptions : {
+					regExpSearch : /barrage/i,
+					name : "Barrage",
+					source : ["LRDToB", 0],
+					ability : 2,
+					dc : true,
+					list : "ranged",
+					type : "Martial",
+					isAlwaysProf : true,
+					damage : [3, 10, "piercing"],
+					range : "15 ft cone",
+					description : "Dex save; half damage on success"
+				},
+				weaponsAdd : ["Barrage"],
+				calcChanges : {
+					atkCalc : [
+						function (fields, v, output) {
+							if (v.isRangedWeapon && (/barrage/i).test(v.WeaponName)) {
+								var fightingStyle = GetFeatureChoice('class', 'fighter', 'fighting style');
+								
+								output.extraHit -= (fightingStyle == 'archery' ? -2 : fightingStyle == 'close quarters shooter' ? -1 : 0);
+							}
+						},""
+					]
+				}
+			},
+			"double up (prereq: gunfighter form)" : {
+				name : "Double Up",
+				source : ["LRDToB", 0],
+				prereqeval : function(v) { return GetFeatureChoice('class', 'fighter', 'subclassfeature3.1') != ''; },
+				description : desc([
+					"On a Gunfighter firearm hit, I can hit another creature within 15 ft of the original target",
+					"The creature takes piercing damage equal to my Dexeterity modifier"
+				]),
+				usages : "Charisma modifier per ",
+				usagescalc : "event.value = Math.max(1, What('Cha Mod'));",
+				recovery : "short rest"
+			},
+			"lightning round (prereq: gunfighter form)" : {
+				name : "Lightning Round",
+				source : ["LRDToB", 0],
+				prereqeval : function(v) { return GetFeatureChoice('class', 'fighter', 'subclassfeature3.1') != ''; },
+				description : desc([
+					"I can use an action to fire a bolt of electricity in a straight line",
+					"The line is 1 ft wide and 30 ft long; creatures in the line make a Dex save",
+					"A creature takes 3d8 lightning damage on a failure, or half as much damage on a success"
+				]),
+				weaponOptions : {
+					regExpSearch : /lightning round/i,
+					name : "Lightning Round",
+					source : ["LRDToB", 0],
+					ability : 2,
+					dc : true,
+					list : "ranged",
+					type : "Martial",
+					isAlwaysProf : true,
+					damage : [3, 8, "lightning"],
+					range : "30 ft line",
+					description : "Dex save; half damage on success"
+				},
+				weaponsAdd : ["Lightning Round"],
+				calcChanges : {
+					atkCalc : [
+						function (fields, v, output) {
+							if (v.isRangedWeapon && (/lightning round/i).test(v.WeaponName)) {
+								var fightingStyle = GetFeatureChoice('class', 'fighter', 'fighting style');
+								
+								output.extraHit -= (fightingStyle == 'archery' ? -2 : fightingStyle == 'close quarters shooter' ? -1 : 0);
+							}
+						},""
+					]
+				},
+				usages : "Charisma modifier per ",
+				usagescalc : "event.value = Math.max(1, What('Cha Mod'));",
+				recovery : "short rest",
+				action : ["action", ""]
+			},
+			"trial by fire (prereq: gunfighter form)" : {
+				name : "Trial by Fire",
+				source : ["LRDToB", 0],
+				description : desc([
+					"I can use a bonus action to charge my weapons fire",
+					"On a hit, I deal extra fire damage equal to half your fighter level, rounded up"
+				]),
+				calcChanges : {
+					atkCalc : [
+						function (fields, v, output) {
+							if (!v.isSpell && (/\bcharged\b/i).test(v.WeaponText)) {
+								output.extraDmg += Math.ceil(classes.known.fighter.level / 2);
+							}
+						},
+						"If I include the word 'Charged' in a weapon's name or description, the calculation will add extra fire damage equal to half my fighter level, rounded up."
+					]
+				},
+				usages : "Charisma modifier per ",
+				usagescalc : "event.value = Math.max(1, What('Cha Mod'));",
+				recovery : "short rest",
+				action : ["bonus action", ""]
+			}
+		},
 		"subclassfeature7" : {
+			name : "Cunning Shot",
+			source : ["LRDToB", 0],
+			minlevel : 7,
+			description : desc(["My Gunfighter firearm attacks ignore damage resistances and immunities"]),
+			calcChanges : {
+				atkAdd : [
+					function (fields, v) {
+						if ((/sniper firearm/i).test(v.WeaponName) || (/pistoleer firearm/i).test(v.WeaponName) || (/lightning round/i).test(v.WeaponName) || (/barrage/i).test(v.WeaponName)) {
+							fields.Description += (fields.Description ? '; ' : '') + 'ignores resistances/immunities';
+						}
+					},
+					"My Gunfighter Firearm attacks ignore damage resistances and immunities."
+				]
+			}
 		},
 		"subclassfeature10" : {
+			name : "Gring and Bear It",
+			source : ["LRDToB", 0],
+			minlevel : 10,
+			description : desc(["My movement speed increases by 10 ft and I gain +1 AC when I use Second Wind"])
 		},
 		"subclassfeature15" : {
+			name : "Right Gun for the Job",
+			source : ["LRDToB", 0],
+			minlevel : 15,
+			description : desc(["After a long rest I can replace any Firearm Upgrade with a different one"])
 		},
 		"subclassfeature18" : {
+			name : "Light 'Em Up",
+			source : ["LRDToB", 0],
+			minlevel : 18,
+			description : desc([
+				"As a bonus action I can throw or place an explosive",
+				"When it is thrown, it explodes immediately on impact",
+				"When it is placed, it can be detonated from up to 60 ft away as a bonus action",
+				"When it explodes, creatures within a 15 ft radius make a Dexeterity save",
+				"A creature takes 12d6 force damage on a failure, or half as much damage on a success"
+			]),
+			weaponOptions : {
+				regExpSearch : /explosive/i,
+				name : "Explosive",
+				source : ["LRDToB", 0],
+				ability : 2,
+				dc : true,
+				list : "ranged",
+				type : "Martial",
+				isAlwaysProf : true,
+				abilitytodamage : false,
+				damage : [12, 6, "force"],
+				range : "30 ft",
+				description : "Explodes in 15 ft radius \u2014 Dex save; half damage on success"
+			},
+			weaponsAdd : ["Explosive"],
+			calcChanges : {
+				atkCalc : [
+					function (fields, v, output) {
+						if (v.isRangedWeapon && (/explosive/i).test(v.WeaponName)) {
+							var fightingStyle = GetFeatureChoice('class', 'fighter', 'fighting style');
+							
+							output.extraHit -= (fightingStyle == 'archery' ? -2 : fightingStyle == 'close quarters shooter' ? -1 : 0);
+						}
+					},""
+				]
+			},
+			usages : 1,
+			action : [["bonus action", " (throw/place)"], ["bonus action", " (remote detonate)"]],
+			recovery : "short rest"
 		}
 	}
 });
