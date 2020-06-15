@@ -147,43 +147,66 @@ AddSubClass("fighter", "renegade", {
 			name : "Gunfighter Form",
 			source : ["LRDToB", 0],
 			minlevel : 3,
-			description : desc(["Choose a Gunfighter Form using the \"Choose Feature\" button above"]),
+			description : desc(["Choose a Gunfighter Firearm Form using the \"Choose Feature\" button above"]),
 			choices : ["Pistoleer", "Sniper"],
 			"pistoleer" : {
 				name : "Pistoleer",
 				description : desc(["My firearm is a small flintlock handgun"]),
 				weaponOptions : {
-					regExpSearch : /pistoleer form$/i,
-					name : "Pistoleer Form",
+					regExpSearch : /pistoleer firearm$/i,
+					name : "Pistoleer Firearm",
 					source : ["LRDToB", 0],
 					ability : 2,
 					list : "ranged",
 					type : "Martial",
+					isAlwaysProf : true,
 					damage : [1, 6, "piercing"],
 					range : "30 ft",
 					abilitytodamage : true,
 					ammo : "bullet",
 					description : "Ammunition; 1 shot per attack"
 				},
-				weaponsAdd : ["Pistoleer Form"]
+				weaponsAdd : ["Pistoleer Firearm"],
+				calcChanges : {
+					atkAdd : [
+						function (fields, v) {
+							if (!v.isSpell && classes.known.fighter && classes.known.fighter.level >= 3 && (/pistoleer firearm/i).test(v.WeaponName) && GetFeatureChoice('class', 'fighter', 'subclassfeature3.1') == 'pistoleer') {
+								var atksNum = (classes.known.fighter.level < 5 ? 1 : classes.known.fighter.level < 11 ? 2 : classes.known.fighter.level < 20 ? 3 : 4);
+								var shotStr = (classes.known.fighter.level < 5 ? "shot" : "shots");
+								
+								fields.Description = fields.Description.replace(/[0-9] shots?/i, atksNum + " " + shotStr);
+							}
+						},""
+					]
+				}
 			},
 			"sniper" : {
 				name : "Sniper",
 				description : desc(["My firearm is a large two-handed firearm"]),
 				weaponOptions : {
-					regExpSearch : /sniper form$/i,
-					name : "Sniper Form",
+					regExpSearch : /sniper firearm$/i,
+					name : "Sniper Firearm",
 					source : ["LRDToB", 0],
 					ability : 2,
 					list : "ranged",
 					type : "Martial",
+					isAlwaysProf : true,
 					damage : [1, 10, "piercing"],
 					range : "120 ft",
 					abilitytodamage : true,
 					ammo : "bullet",
 					description : "Ammunition, heavy, two-handed"
 				},
-				weaponsAdd : ["Sniper Form"]
+				weaponsAdd : ["Sniper Firearm"],
+				calcChanges : {
+					atkCalc : [
+						function (fields, v, output) {
+							if ((!v.isSpell && classes.known.fighter && classes.known.fighter.level >= 3 && (/sniper firearm/i).test(v.WeaponName) && GetFeatureChoice('class', 'fighter', 'subclassfeature3.1') == 'sniper')) {
+								output.die = output.die.replace('1d10', (classes.known.fighter.level < 5 ? 1 : classes.known.fighter.level < 11 ? 2 : classes.known.fighter.level < 20 ? 4 : 6) + 'd10');
+							}
+						}
+					]
+				}
 			}
 		},
 		"subclassfeature7" : {
