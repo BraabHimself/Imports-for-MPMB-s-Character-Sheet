@@ -552,3 +552,74 @@ AddSubClass("fighter", "renegade", {
 		}
 	}
 });
+
+AddSubClass("rogue", "wild card", {
+	regExpSearch : /^(?=.*(rogue|miscreant))(?=.*wild card).*$/i,
+	subname : "Wild Card",
+	source : ["LRDToB", 0],
+	features : {
+		"subclassfeature3" : {
+			name : "Tricks Up the Sleeve",
+			source : ["LRDToB", 0],
+			minlevel : 3,
+			description : desc([
+				"I know the Guidance cantrip; at 9th level its range is 30 ft and can be cast using a bonus action"
+			]),
+			spellcastingBonus : {
+				name : "Tricks Up the Sleeve",
+				spells : ["guidance"],
+				selection : ["guidance"],
+				firstCol : "atwill"
+			}
+		},
+		"subclassfeature3.1" : {
+			name : "Wild Card's Gambit",
+			source : ["LRDToB", 0],
+			minlevel : 3,
+			description : desc([
+				"Choose dice set, dragonchess set, or playing card set with the \"Choose Feature\" button",
+				"The gaming set chosen grants a Wild Card's Gambit",
+				"I can change my Gambit choice whenever I gain a level in this class"
+			])
+		},
+		"subclassfeature9" : {
+			name : "Shifting the Odds",
+			source : ["LRDToB", 0],
+			minlevel : 9,
+			description : desc([
+				"As a bonus action I can teleport to an unoccupied space with 120 ft that I can see",
+				"Creatures within 10 ft of the starting space make a Dex save (DC 8 + Cha mod + Prof bonus)",
+				"A creature takes 4d10 force damage on a failure, or half as much damage on a success"
+			]),
+			action : ["bonus action", " (teleport)"],
+			usages : 1,
+			recovery : "short rest"
+		},
+		"subclassfeature13" : {
+			name : "Twist of Fate",
+			source : ["LRDToB", 0],
+			minlevel : 13,
+			description : desc([
+				"I can swap initiative order after rolling initiative, but before the first turn",
+				"I can swap with one creature I see; if its an ally they must agree to swap"
+			])
+		},
+		"subclassfeature17" : {
+			name : "Joker Wild",
+			source : ["LRDToB", 0],
+			minlevel : 17,
+			description : desc([
+				"As a bonus action I can assume an incorporeal form, granting the following benefits:",
+				" \u2022 I regain all spent uses/dice of my Wild Card's Gambit feature",
+				" \u2022 My movement speed is doubled and I am resitant to all damage",
+				" \u2022 I am immune to the grappled, paralyzed, stunned, and restrained conditions",
+				" \u2022 I can move through objects as if they were difficult terrain",
+				"If I end my turn in a creature, it takes 1d0 force damage and is moved 5 ft",
+				"This form last for 1 min or until I am incapacitated"
+			]),
+			usages : 1,
+			recovery : "long rest",
+			action : ["bonus action", ""]
+		}
+	}
+});
